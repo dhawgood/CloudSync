@@ -44,7 +44,7 @@ You can install CloudSync on multiple Mac computers to keep their respective `Do
 
 ## Installation
 
-1.  Download the latest release from the [Releases page](https://github.com/your-username/your-repo/releases).
+1.  Download the latest release from the (https://github.com/dhawgood/CloudSync/releases).
 2.  Open the `.dmg` file.
 3.  Drag the `CloudSync` application into your `Applications` folder.
 
@@ -62,4 +62,4 @@ You can install CloudSync on multiple Mac computers to keep their respective `Do
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the (LICENSE) file for details.
