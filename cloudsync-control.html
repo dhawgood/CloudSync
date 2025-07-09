@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:*;">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudSync - Enhanced Google Drive Backup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-weight: 400;
+            color: #374151;
+            background:
+                linear-gradient(135deg,
+                    #F3E8FF 0%, #EABFFF 8%, #E879F9 15%, #C56BF8 25%,
+                    #8B5CF6 35%, #6078F7 45%, #3B82F6 55%, #1EA0F0 65%,
+                    #06B6D4 75%, #5ACEC3 85%, #A7F3D0 95%, #DBEAFE 100%
+                );
+            min-height: 100vh; display: flex; align-items: center;
+            justify-content: center; padding: 40px; position: relative;
+        }
+
+        body::before {
+            content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(236, 121, 249, 0.45) 0%, transparent 45%),
+                radial-gradient(circle at 80% 80%, rgba(59, 130, 246, 0.4) 0%, transparent 55%),
+                radial-gradient(circle at 60% 30%, rgba(139, 92, 246, 0.35) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: -1;
+            animation: gradientShift 25s ease-in-out infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
+            33% { opacity: 0.8; transform: scale(1.1) rotate(2deg); }
+            66% { opacity: 0.9; transform: scale(0.95) rotate(-1deg); }
+        }
+
+        .container {
+            border-radius: 80px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.25) 50%, rgba(255, 255, 255, 0.3) 100%), radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15) 0%, transparent 60%);
+            backdrop-filter: blur(80px) saturate(150%);
+            -webkit-backdrop-filter: blur(80px) saturate(150%);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.08), inset 0 3px 0 rgba(255, 255, 255, 0.4), inset 0 -3px 0 rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 48px;
+            max-width: 700px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.06) 0%, transparent 40%, transparent 60%, rgba(255, 255, 255, 0.04) 100%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .container > * {
+            position: relative;
+            z-index: 2;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 44px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            text-shadow: 0 4px 30px rgba(0, 0, 0, 0.1), 0 2px 10px rgba(255, 255, 255, 0.4);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 16px;
+            font-weight: 400;
+        }
+
+    .app-logo {
+    border-radius: 9px;
+    width: 50px;
+    height: 50px;
+    background-color: rgba(255, 255, 255, 0.3); /* Restored for the glassy effect base */
+    background-image: url('assets/icon.svg');   /* Your SVG */
+    background-size: 85%;                      /* Adjust as needed (e.g., 'contain', '35px') */
+    background-repeat: no-repeat;
+    background-position: center center;
+    backdrop-filter: blur(20px) saturate(130%);
+    position: relative; /* Keep for potential ::before or other positioned children if any */
+    box-shadow: 0 12px 32px rgba(0,0,0,0.12), inset 0 2px 0 rgba(255,255,255,0.4);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    /* display: flex; align-items: center; justify-content: center; are optional now */
+}
+
+.app-logo::after {
+    content: ''; /* Ensures the old emoji is gone */
+}
+
+        .section-title {
+            color: #37304a;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .icon-title {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            stroke-width: 1.8;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .body-text {
+            color: #374151;
+            font-size: 15px;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        .secondary-text {
+            color: #6B7280;
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 1.4;
+        }
+
+        .small-text {
+            font-size: 12px;
+            font-weight: 400;
+            color: #9CA3AF;
+        }
+
+        .dynamic-glass-card {
+            border-radius: 25px;
+            background: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0.08) 100%), linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.18) 100%);
+            backdrop-filter: blur(40px) saturate(140%);
+            -webkit-backdrop-filter: blur(40px) saturate(140%);
+            padding: 32px;
+            margin-bottom: 24px;
+            border: 2px solid rgba(255,255,255,0.3);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04), inset 0 3px 0 rgba(255,255,255,0.4), inset 0 -2px 0 rgba(255,255,255,0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dynamic-glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.6) 100%);
+        }
+
+        .dynamic-glass-card-compact {
+            padding: 28px;
+        }
+
+        .glass-surface {
+            border-radius: 18px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.15) 100%);
+            backdrop-filter: blur(25px) saturate(120%);
+            padding: 16px;
+            border: 1.5px solid rgba(255,255,255,0.25);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.04), inset 0 2px 0 rgba(255,255,255,0.35);
+            position: relative;
+        }
+
+        .status-main {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .status-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #06B6D4;
+            box-shadow: 0 0 16px rgba(6,182,212,0.7);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .pill-badge {
+            border-radius: 999px;
+            font-size: 11px;
+            color: #6d28d9;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(15px) saturate(120%);
+            padding: 6px 12px;
+            font-weight: 600;
+            border: 1px solid rgba(255,255,255,0.25);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+
+        .pill-badge.error {
+            background: rgba(255,204,204,0.3);
+            color: #7f1d1d;
+            border-color: rgba(239,68,68,0.4);
+        }
+
+        .pill-badge.warning {
+            background: rgba(255,247,204,0.3);
+            color: #713f12;
+            border-color: rgba(255,220,100,0.4);
+        }
+
+        .pill-badge.success {
+            background: rgba(204,255,229,0.3);
+            color: #065f46;
+            border-color: rgba(34,197,94,0.4);
+        }
+
+        .setup-card {
+            display: none;
+        }
+
+        .setup-card.show {
+            display: block;
+        }
+
+        .setup-step {
+            padding: 16px;
+            margin-bottom: 12px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 12px;
+            border-left: 4px solid #6A9CFD;
+        }
+
+        .setup-step.completed {
+            border-left-color: #34D399;
+            background: rgba(204,255,229,0.2);
+        }
+
+        .setup-step.error {
+            border-left-color: #EF4444;
+            background: rgba(255,204,204,0.2);
+        }
+
+        .setup-step h4 {
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .setup-step p {
+            font-size: 13px;
+            color: #6B7280;
+            line-height: 1.4;
+            margin-bottom: 4px;
+        }
+
+        .setup-step code {
+            background: rgba(0,0,0,0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 12px;
+        }
+
+        .setup-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .option-item {
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.15) 100%);
+            margin-bottom: 12px;
+            border: 1.5px solid rgba(255,255,255,0.25);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .option-item:hover {
+            background: linear-gradient(135deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.22) 100%);
+            transform: translateY(-1px);
+        }
+
+        .option-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .advanced-toggle {
+            margin: 16px 0;
+        }
+
+        .advanced-header {
+            cursor: pointer;
+            padding: 16px 24px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+            border-radius: 15px;
+            border: 1.5px solid rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.9);
+            font-weight: 500;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            user-select: none;
+            display: flex;
+            align-items: center;
+        }
+
+        .advanced-header:hover {
+            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.08) 100%);
+        }
+
+        .advanced-header .icon-title {
+            margin-right: 8px;
+        }
+
+        .advanced-header-text {
+            flex-grow: 1;
+        }
+
+        .advanced-header::after {
+            content: '▼';
+            font-size: 10px;
+            margin-left: auto;
+            transition: transform 0.3s ease;
+        }
+
+        .advanced-header.open::after {
+            transform: rotate(180deg);
+        }
+
+        .advanced-options-panel {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out;
+            padding: 0 12px;
+            margin-top: 0;
+        }
+
+        .advanced-options-panel.open {
+            max-height: 500px; /* Adjust as needed for content */
+            padding-top: 12px;
+            margin-top: 8px;
+        }
+
+         .advanced-options-panel .option-item {
+            margin-bottom:8px;
+            border-radius:12px;
+        }
+        .advanced-options-panel .option-item:last-child {
+            margin-bottom:0;
+        }
+
+        .option-input {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .number-input {
+            width: 60px;
+            padding: 8px 10px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            color: #374151;
+            font-size: 14px;
+            text-align: center;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .select-input {
+            padding: 8px 10px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            color: #374151;
+            font-size: 14px;
+            transition: all 0.2s ease-in-out;
+            min-width: 70px;
+        }
+
+        .number-input:focus, .select-input:focus {
+            outline: none;
+            border-color: rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.3);
+        }
+
+        .toggle {
+            border-radius: 999px;
+            width: 52px;
+            height: 28px;
+            background: rgba(255,255,255,0.25);
+            position: relative;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .toggle.active {
+            background: rgba(139,92,246,0.85);
+            box-shadow: 0 6px 16px rgba(139,92,246,0.4);
+        }
+
+        .toggle::after {
+            border-radius: 50%;
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: rgba(255,255,255,0.95);
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+        }
+
+        .toggle.active::after {
+            left: 26px;
+        }
+
+        .actions-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-top: 32px;
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .action-btn {
+            border-radius: 15px;
+            padding: 16px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            border: none;
+        }
+
+        .action-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+        .action-btn:disabled {
+            opacity:0.5;
+            cursor:not-allowed;
+            transform:none;
+        }
+
+        .action-btn.success {
+            background: linear-gradient(135deg, #8B5CF6 0%, #06B6D4 100%);
+            color: #fff;
+            box-shadow: 0 12px 32px rgba(139,92,246,0.35);
+        }
+
+        .action-btn.success:hover:not(:disabled) {
+            box-shadow: 0 16px 40px rgba(139,92,246,0.4);
+        }
+
+        .actions-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .action-btn.secondary {
+            background: linear-gradient(135deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.2) 100%);
+            color: rgba(255,255,255,0.9);
+            border: 1px solid rgba(255,255,255,0.35);
+        }
+
+        .action-btn.secondary:hover:not(:disabled) {
+            background: linear-gradient(135deg, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0.25) 100%);
+        }
+
+        .action-btn.danger {
+            background: linear-gradient(135deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.2) 100%);
+            color: #FCA5A5;
+            border: 1px solid rgba(239,68,68,0.35);
+        }
+         .action-btn.danger:hover:not(:disabled) {
+            background: linear-gradient(135deg, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0.25) 100%);
+            border-color:rgba(239,68,68,0.5);
+            color: #F87171;
+        }
+
+        .emergency-stop {
+            display: none;
+            background: linear-gradient(135deg, rgba(255,139,208,0.8) 0%, rgba(245,230,232,0.9) 100%);
+            color: #7c2d12;
+            border: 2px solid rgba(255,139,208,0.4);
+            box-shadow: 0 8px 25px rgba(255,139,208,0.3);
+            animation: sophisticatedPulse 3s infinite;
+        }
+         @keyframes sophisticatedPulse {
+            0%, 100% {
+                box-shadow: 0 4px 20px rgba(255, 139, 208, 0.3), 0 0 0 0 rgba(255, 139, 208, 0.4);
+                border-color: rgba(255, 139, 208, 0.4);
+            }
+            50% {
+                box-shadow: 0 8px 30px rgba(255, 139, 208, 0.4), 0 0 0 8px rgba(255, 139, 208, 0);
+                border-color: rgba(255, 139, 208, 0.6);
+            }
+        }
+        .actions-container.running .action-btn:not(.emergency-stop) {opacity: 0.3;pointer-events: none;}
+        .actions-container.running .emergency-stop {display: flex;}
+
+        .icon {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            stroke-width: 1.8;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .log-card {
+            background: rgba(31,41,55,0.75);
+            border-radius: 9px;
+            padding: 20px;
+            color: #E5E7EB;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            max-height: 180px;
+            overflow-y: auto;
+            margin-top: 16px;
+            display: block;
+        }
+
+        #command-preview-card {
+            display: none;
+            margin-bottom: 24px;
+        }
+        #command-preview-card:last-of-type {
+            margin-bottom:0;
+        }
+
+        .command-preview-content {
+            background: linear-gradient(135deg, #263142 0%, #3c4a5f 100%);
+            color: #d1d5db;
+            border-radius: 15px;
+            padding: 16px 20px;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            font-size: 12px;
+            margin-top: 16px;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        .progress-section {
+            background: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0.08) 100%), linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.18) 100%);
+            backdrop-filter: blur(40px) saturate(140%);
+            -webkit-backdrop-filter: blur(40px) saturate(140%);
+            padding: 32px;
+            margin-bottom: 24px;
+            border: 2px solid rgba(255,255,255,0.3);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04), inset 0 3px 0 rgba(255,255,255,0.4), inset 0 -2px 0 rgba(255,255,255,0.15);
+            position: relative;
+            overflow: hidden;
+            border-radius: 25px;
+            display: none; /* Hidden by default */
+        }
+
+        .progress-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.6) 100%);
+        }
+
+        .progress-section.active {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .progress-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .progress-title {
+            color: #37304a;
+            font-weight: 600;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top: 2px solid #8B5CF6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .progress-bar-container {
+            background: rgba(255,255,255,0.25);
+            border-radius: 12px;
+            height: 8px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #8B5CF6 0%, #06B6D4 50%, #8B5CF6 100%);
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 12px;
+        }
+
+        .progress-text {
+            color: #37304a;
+            font-size: 14px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .retry-section {
+            border-radius: 20px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+            background: linear-gradient(135deg, rgba(255, 247, 204, 0.3) 0%, rgba(255, 235, 153, 0.2) 100%), rgba(255,255,255,0.2);
+            backdrop-filter: blur(15px) saturate(120%);
+            border: 1.5px solid rgba(255, 220, 100, 0.4);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.3);
+        }
+
+        .retry-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .retry-icon {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #f59e0b;
+        }
+
+        .retry-text {
+            flex: 1;
+            color: #713f12;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .retry-counter {
+            background: rgba(255,255,255,0.25);
+            backdrop-filter:blur(5px);
+            border-radius:8px;
+            padding:4px 10px;
+            font-size:.85rem;
+            color:#713f12;
+            font-weight:600;
+            min-width:45px;
+            text-align:center;
+            border:1px solid rgba(255,255,255,0.2);
+        }
+
+        .rate-limit-notice {
+            border-radius: 20px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+            color: #374151;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(15px) saturate(120%);
+            border: 1.5px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.3);
+        }
+        .rate-limit-notice.warning {
+            background: linear-gradient(135deg, rgba(255, 247, 204, 0.3) 0%, rgba(255, 235, 153, 0.2) 100%), rgba(255,255,255,0.2);
+            border-color: rgba(255, 220, 100, 0.4); color: #713f12;
+        }
+        .rate-limit-notice.warning .rate-limit-icon { color: #f59e0b; }
+        .rate-limit-notice.error {
+            background: linear-gradient(135deg, rgba(255, 204, 204, 0.3) 0%, rgba(255, 180, 180, 0.2) 100%), rgba(255,255,255,0.2);
+            border-color: rgba(239, 68, 68, 0.4); color: #7f1d1d;
+        }
+        .rate-limit-notice.error .rate-limit-icon { color: #ef4444; }
+        .rate-limit-notice.retry {
+            background: linear-gradient(135deg, rgba(204, 229, 255, 0.3) 0%, rgba(180, 210, 255, 0.2) 100%), rgba(255,255,255,0.2);
+            border-color: rgba(59, 130, 246, 0.4); color: #1e3a8a;
+        }
+        .rate-limit-notice.retry .rate-limit-icon { color: #3b82f6; }
+        .rate-limit-content { display: flex; align-items: center; gap: 12px; }
+        .rate-limit-icon { font-size: 1.2rem; font-weight: bold; }
+        .rate-limit-text { flex: 1; font-weight: 500; font-size: 14px; }
+        .rate-limit-countdown {
+            background: rgba(255,255,255,0.25); backdrop-filter:blur(5px); border-radius:8px;
+            padding:4px 10px; font-size:.85rem; color:currentColor; font-weight:600;
+            min-width:45px; text-align:center; border:1px solid rgba(255,255,255,0.2);
+        }
+
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(30,30,40,0.6); backdrop-filter:blur(8px) saturate(120%);
+            -webkit-backdrop-filter:blur(8px) saturate(120%); z-index:1000;
+            display: none;
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        .modal-content {
+            background:linear-gradient(135deg,rgba(255,255,255,0.6) 0%,rgba(255,255,255,0.4) 100%);
+            backdrop-filter:blur(30px) saturate(150%); -webkit-backdrop-filter:blur(30px) saturate(150%);
+            border-radius:30px; padding:40px; max-width:520px; width:100%; text-align:center;
+            box-shadow:0 20px 50px rgba(0,0,0,0.2),0 0 0 1px rgba(255,255,255,0.1);
+            border:1.5px solid rgba(255,255,255,0.3); color:#37304a;
+        }
+        .modal h3 {color:#37304a;margin-bottom:16px;font-size:22px;font-weight:600;}
+        .modal p {color:#4b5563;margin-bottom:28px;line-height:1.6;font-size:15px;}
+        .modal-buttons {display:flex;gap:16px;justify-content:center;flex-wrap:wrap;}
+        .modal-btn {border-radius:18px;padding:12px 28px;font-size:15px;font-weight:600;cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;justify-content:center;gap:8px;border:none;}
+        .modal-btn:hover {transform:translateY(-2px);}
+        .modal-btn.primary {background:linear-gradient(135deg,#8B5CF6 0%,#06B6D4 100%);color:#fff;box-shadow:0 8px 20px rgba(139,92,246,0.3);border:1.5px solid rgba(255,255,255,0.1);}
+        .modal-btn.primary:hover {box-shadow:0 12px 25px rgba(139,92,246,0.35);}
+        .modal-btn.secondary {background:rgba(255,255,255,0.3);color:#4A5568;border:1.5px solid rgba(255,255,255,0.4);box-shadow:0 4px 12px rgba(0,0,0,0.05);}
+        .modal-btn.secondary:hover {background:rgba(255,255,255,0.4);border-color:rgba(255,255,255,0.5);}
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.4) 100%);
+            backdrop-filter: blur(30px) saturate(150%);
+            border-radius: 20px;
+            padding: 16px 20px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            display: none;
+            min-width: 300px;
+            z-index: 1000;
+            animation: slideInRight 0.3s ease;
+        }
+        .notification.slideInRightActive { /* Optional class to help re-trigger animation */
+            /* animation: slideInRight 0.3s ease; */
+        }
+
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .notification.success {
+            border-left: 4px solid #34d399;
+        }
+
+        .notification.error {
+            border-left: 4px solid #ef4444;
+        }
+
+        .notification.warning {
+            border-left: 4px solid #f59e0b;
+        }
+
+        .notification.info {
+            border-left: 4px solid #3b82f6;
+        }
+
+        .notification-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .notification-icon {
+            font-size: 1.2rem;
+        }
+
+        .notification-text {
+            flex: 1;
+            color: #37304a;
+            font-weight: 500;
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            color: #64748b;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .log-line { margin-bottom: 4px; }
+        .log-success { color: #34D399; }
+        .log-info { color: #60A5FA; }
+        .log-muted { color: #A1A1AA; }
+        .log-warning { color: #F59E0B; }
+        .log-error { color: #EF4444; }
+
+        .footer { text-align: center; margin-top: 32px; }
+        .footer .small-text {
+            color: rgba(255, 255, 255, 0.8);
+            text-shadow: 0 1px 8px rgba(0, 0, 0, 0.15);
+            font-size: 12px;
+            font-weight: 400;
+        }
+
+        .health-indicator {
+            display: inline-flex; align-items: center; gap: 6px; font-size: 11px;
+            padding: 3px 8px; border-radius: 12px; background: rgba(255,255,255,0.15);
+        }
+        .health-dot { width: 6px; height: 6px; border-radius: 50%; background: #A1A1AA; }
+        .health-dot.online { background: #34D399; }
+        .health-dot.offline { background: #EF4444; }
+        .health-dot.checking { background: #F59E0B; }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header"><h1><div class="app-logo"></div>Cloud Sync</h1><p>Enhanced documents synchronization control</p></div>
+
+        <div class="dynamic-glass-card">
+            <div class="status-main">
+                <div class="status-info">
+                    <div class="status-dot"></div>
+                    <span class="body-text" id="status-text">Initializing...</span>
+                </div>
+                <div class="pill-badge" id="system-badge">Checking</div>
+            </div>
+            <div class="glass-surface">
+                <div class="secondary-text" style="margin-bottom: 8px;" id="status-paths">Local: ~/Documents ↔ Google Drive: gdrive-rclone:Documents</div>
+                <div class="small-text" style="display: flex; align-items: center; justify-content: space-between;">
+                    <span>📁 Conflicts → gdrive-rclone:Conflicts | 🗄️ Archive → gdrive-rclone:Archive</span>
+                    <div class="health-indicator" id="server-health"> <div class="health-dot" id="health-dot"></div>
+                        <span id="health-text">Server</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dynamic-glass-card setup-card" id="setup-card">
+            <div class="section-title">
+                <svg class="icon-title" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                System Setup Required
+            </div>
+            <div class="setup-step" id="rclone-step">
+                <h4>1. Install rclone</h4>
+                <p>rclone is required for cloud synchronization</p>
+                <p><strong>macOS:</strong> <code>brew install rclone</code></p>
+                <p><strong>Linux:</strong> <code>curl https://rclone.org/install.sh | sudo bash</code></p>
+                <p><strong>Windows:</strong> Download from <code>https://rclone.org/downloads/</code></p>
+            </div>
+            <div class="setup-step" id="gdrive-step">
+                <h4>2. Configure Google Drive</h4>
+                <p>Set up Google Drive connection with name "gdrive-rclone"</p>
+                <p><strong>Run:</strong> <code>rclone config</code></p>
+                <p>Choose "New remote" → "Google Drive" → Name: "gdrive-rclone"</p>
+            </div>
+            <div class="setup-step" id="permissions-step">
+                <h4>3. Verify Permissions</h4>
+                <p>Ensure CloudSync can access your Documents folder</p>
+                <p>Check that <code>~/Documents</code> exists and is readable</p>
+            </div>
+            <div class="setup-actions">
+                <button class="action-btn secondary" id="recheck-setup-btn">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                    Recheck Setup
+                </button>
+                <button class="action-btn secondary" id="launch-config-btn">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Launch Config Wizard
+                </button>
+            </div>
+        </div>
+
+        <div class="progress-section dynamic-glass-card" id="progress-section">
+            <div class="progress-header">
+                <div class="progress-title">
+                    <div class="spinner"></div>
+                    <span id="progress-title-text">Syncing Documents...</span>
+                </div>
+                <div id="progress-percentage">0%</div>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progress-bar" style="width: 0%;"></div>
+            </div>
+            <div class="progress-text" id="progress-text">Preparing sync operation...</div>
+        </div>
+
+        <div class="retry-section" id="retry-section">
+            <div class="retry-content">
+                <div class="retry-icon" id="retry-icon">🔄</div>
+                <div class="retry-text" id="retry-text">Auto-retrying failed operation...</div>
+                <div class="retry-counter" id="retry-counter">1/5</div>
+            </div>
+        </div>
+
+        <div class="rate-limit-notice" id="rate-limit-notice">
+            <div class="rate-limit-content">
+                <div class="rate-limit-icon" id="rate-limit-icon">⚠️</div>
+                <div class="rate-limit-text" id="rate-limit-text">API rate limit reached. Retrying automatically...</div>
+                <div class="rate-limit-countdown" id="rate-limit-countdown">5s</div>
+            </div>
+        </div>
+
+        <div class="dynamic-glass-card" id="sync-options-card" style="display: block;">
+            <div class="section-title">
+                <svg class="icon-title" viewBox="0 0 24 24">
+                    <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Sync Options
+            </div>
+            <div class="option-item" title="Enable bidirectional sync (rclone bisync)">
+                <span class="body-text">Bidirectional Sync</span>
+                <div class="toggle" id="bisync-toggle"></div>
+            </div>
+            <div class="option-item" title="Preview changes without executing">
+                <span class="body-text">Dry Run (preview only)</span>
+                <div class="toggle" id="dry-run-toggle"></div>
+            </div>
+            <div class="option-item" title="Backup conflicting files">
+                <span class="body-text">Conflict Detection &amp; Backup</span>
+                <div class="toggle active" id="backup-toggle"></div>
+            </div>
+            <div class="option-item" title="Archive deleted files">
+                <span class="body-text">Archive Deleted Files</span>
+                <div class="toggle active" id="archive-toggle"></div>
+            </div>
+            <div class="option-item" title="Enable detailed logging">
+                <span class="body-text">Verbose Logging</span>
+                <div class="toggle active" id="verbose-toggle"></div>
+            </div>
+            <div class="option-item" title="Limit maximum deletions per sync">
+                <span class="body-text">Safety Limits (max deletions)</span>
+                <div class="option-input">
+                    <input type="number" class="number-input" id="max-delete-input" value="10" min="0" max="999">
+                    <div class="toggle active" id="safety-toggle"></div>
+                </div>
+            </div>
+            <div class="advanced-toggle">
+                <div class="advanced-header" id="advanced-header">
+                    <div class="advanced-header-content-wrapper">
+                        <svg class="icon-title" viewBox="0 0 24 24">
+                            <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span class="advanced-header-text">Advanced Sync Options</span>
+                    </div>
+                </div>
+                <div class="advanced-options-panel" id="advanced-options-panel">
+                    <div class="option-item" title="Automatically retry failed operations">
+                        <span class="body-text">Auto-Retry on Failures</span>
+                        <div class="option-input">
+                            <input type="number" class="number-input" id="max-retries-input" value="5" min="0" max="10">
+                            <div class="toggle active" id="auto-retry-toggle"></div>
+                        </div>
+                    </div>
+
+                    <div class="option-item" title="Limit bandwidth usage during sync">
+                        <span class="body-text">Bandwidth Limit</span>
+                        <div class="option-input">
+                            <input type="number" class="number-input" id="bandwidth-input" value="10" min="1" max="1000">
+                            <select class="select-input" id="bandwidth-unit">
+                                <option value="M">MB/s</option>
+                                <option value="K">KB/s</option>
+                            </select>
+                            <div class="toggle" id="bandwidth-limit-toggle"></div>
+                        </div>
+                    </div>
+
+                    <div class="option-item" title="Override safety checks">
+                        <span class="body-text">Force Sync (override safety checks)</span>
+                        <div class="toggle" id="force-toggle"></div>
+                    </div>
+                    <div class="option-item" title="Skip files with conflict markers">
+                        <span class="body-text">Smart Conflict Filter (skip conflict files)</span>
+                        <div class="toggle" id="conflict-toggle"></div>
+                    </div>
+                    <div class="option-item" title="Show complete rclone command">
+                        <span class="body-text">Show Full Rclone Command</span>
+                        <div class="toggle" id="debug-toggle"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions-container" id="actions-container">
+            <button class="action-btn emergency-stop" id="emergency-stop">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <rect x="6" y="6" width="12" height="12" rx="1"></rect>
+                </svg>
+                Emergency Stop (Ctrl+C)
+            </button>
+            <button class="action-btn success" id="run-sync-btn">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <polyline points="13 17 18 12 13 7"></polyline>
+                    <polyline points="6 17 11 12 6 7"></polyline>
+                </svg>
+                Run Sync
+            </button>
+            <div class="actions-row">
+                <button class="action-btn secondary" id="test-btn">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    Test Connection
+                </button>
+                <button class="action-btn secondary" id="preview-btn">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <polyline points="16 18 22 12 16 6"></polyline>
+                        <polyline points="8 6 2 12 8 18"></polyline>
+                    </svg>
+                    Preview Command
+                </button>
+            </div>
+            <button class="action-btn danger" id="reset-btn">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                Reset & Resync
+            </button>
+        </div>
+
+        <div class="dynamic-glass-card dynamic-glass-card-compact" id="command-preview-card">
+            <div class="section-title" style="font-size: 15px; color: #37304a;">
+                <svg class="icon-title" viewBox="0 0 24 24">
+                    <polyline points="16 18 22 12 16 6"></polyline>
+                    <polyline points="8 6 2 12 8 18"></polyline>
+                </svg>
+                Command Preview
+            </div>
+            <div class="command-preview-content" id="command-preview-text">
+                rclone sync ~/Documents gdrive-rclone:Documents --verbose --progress --dry-run
+            </div>
+        </div>
+
+        <div class="dynamic-glass-card dynamic-glass-card-compact">
+            <div class="section-title" style="margin-bottom:0px;font-size:16px;">Console Output</div>
+            <div class="log-card" id="log-output">
+                <div class="log-line log-info">[Loading] CloudSync Control initializing...</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p class="small-text">Enhanced Cloud Sync Control</p>
+        </div>
+    </div>
+
+    <div class="modal" id="config-wizard-modal" style="display: none;">
+        <div class="modal-content">
+            <h3 id="wizard-title">🚀 Google Drive Configuration</h3>
+            <p id="wizard-message">Let's set up your Google Drive connection. This will launch the rclone configuration wizard.</p>
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" id="wizard-cancel-btn">Cancel</button>
+                <button class="modal-btn primary" id="wizard-launch-btn">Launch rclone config</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification">
+        <div class="notification-content">
+            <div class="notification-icon" id="notification-icon">✅</div>
+            <div class="notification-text" id="notification-text">Sync completed successfully!</div>
+            <button class="notification-close" id="notification-close">&times;</button>
+        </div>
+    </div>
+
+    <script>
+        // Global state variables
+let isRunning = false;
+let serverPort = 8989;
+let retryAttempt = 0;
+let maxRetriesGlobal = 5;
+let progressInterval = null;
+let systemReady = true;
+let serverOnline = null;
+let currentUser = null;
+
+// DOM Elements Cache - Initialize as empty object first
+const elements = {};
+
+// Initialize DOM elements
+function initDOMelements() {
+    const ids = [
+        'status-text', 'system-badge', 'log-output', 'setup-card',
+        'sync-options-card', 'run-sync-btn', 'status-paths', 'health-dot', 'health-text',
+        'advanced-header', 'advanced-options-panel', 'command-preview-text', 'command-preview-card',
+        'config-wizard-modal', 'wizard-cancel-btn', 'wizard-launch-btn', 'progress-section',
+        'progress-title-text', 'progress-percentage', 'progress-bar', 'progress-text',
+        'retry-section', 'retry-icon', 'retry-text', 'retry-counter', 'auto-retry-toggle',
+        'max-retries-input', 'bandwidth-limit-toggle', 'bandwidth-input', 'bandwidth-unit',
+        'rate-limit-notice', 'rate-limit-icon', 'rate-limit-text', 'rate-limit-countdown',
+        'notification', 'notification-icon', 'notification-text', 'notification-close',
+        'bisync-toggle', 'force-toggle', 'conflict-toggle', 'debug-toggle', 'dry-run-toggle',
+        'backup-toggle', 'archive-toggle', 'safety-toggle', 'verbose-toggle', 'max-delete-input',
+        'test-btn', 'preview-btn', 'reset-btn', 'emergency-stop', 'actions-container',
+        'recheck-setup-btn', 'launch-config-btn', 'rclone-step', 'gdrive-step', 'permissions-step'
+    ];
+    
+    // Cache all elements
+    ids.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            // Convert kebab-case to camelCase
+            const camelCaseId = id.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+            elements[camelCaseId] = element;
+        } else {
+            console.warn(`⚠️ DOM Element not found: ${id}`);
+        }
+    });
+
+    // Add elements that use class selectors
+    const statusDot = document.querySelector('.status-dot');
+    if (statusDot) {
+        elements.statusDot = statusDot;
+    }
+
+    console.log(`✅ DOM elements initialized: ${Object.keys(elements).length} elements found`);
+}
+
+// Notification system
+let notificationTimeout;
+function showNotification(message, type = 'success', duration = 4000) {
+    if (!elements.notification) return;
+    if (notificationTimeout) clearTimeout(notificationTimeout);
+
+    const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+    if (elements.notificationIcon) elements.notificationIcon.textContent = icons[type] || icons.success;
+    if (elements.notificationText) elements.notificationText.textContent = message;
+
+    elements.notification.className = `notification ${type}`;
+    elements.notification.style.display = 'block';
+
+    notificationTimeout = setTimeout(() => {
+        if (elements.notification) {
+            elements.notification.style.display = 'none';
+        }
+    }, duration);
+}
+
+// Logging system
+function addLog(message, type = 'info') {
+    const timestamp = new Date().toLocaleTimeString();
+    const colors = {
+        info: '#60A5FA',
+        warning: '#F59E0B',
+        error: '#EF4444',
+        success: '#34D399',
+        muted: '#A1A1AA'
+    };
+    
+    if (elements.logOutput) {
+        const logEntry = document.createElement('div');
+        logEntry.className = 'log-line';
+        logEntry.style.color = colors[type] || colors.info;
+        logEntry.textContent = `[${timestamp}] ${message}`;
+        
+        elements.logOutput.appendChild(logEntry);
+        elements.logOutput.scrollTop = elements.logOutput.scrollHeight;
+    }
+    
+    console.log(`[${type.toUpperCase()}] ${message}`);
+}
+
+// Status update functions
+function getUserHomePath() { 
+    return currentUser ? `/Users/${currentUser}` : '~'; 
+}
+
+function updateStatusPaths() {
+    if (elements.statusPaths) {
+        elements.statusPaths.innerHTML = `Local: ~/Documents ↔ Google Drive: gdrive-rclone:Documents`;
+    }
+}
+
+function updateSystemStatusUI(isReady, message = "") {
+    systemReady = isReady;
+    const statusMsg = message || (isReady ? "System Ready" : "System Not Ready");
+    if (elements.statusText) elements.statusText.textContent = statusMsg;
+    if (elements.statusDot) elements.statusDot.style.background = isReady ? '#34D399' : '#EF4444';
+
+    if (elements.systemBadge) {
+        if (isReady) {
+            elements.systemBadge.textContent = "Ready";
+            elements.systemBadge.className = "pill-badge success";
+        } else {
+            elements.systemBadge.textContent = message ? "Error" : "Not Ready";
+            elements.systemBadge.className = message ? "pill-badge error" : "pill-badge warning";
+        }
+    }
+
+    if (elements.setupCard) elements.setupCard.classList.toggle('show', !isReady && !message);
+    if (elements.syncOptionsCard) elements.syncOptionsCard.style.display = isReady ? 'block' : 'none';
+    if (elements.runSyncBtn) elements.runSyncBtn.disabled = !isReady || isRunning || !serverOnline;
+}
+
+function updateServerHealthUI(isOnline) {
+    serverOnline = isOnline;
+    if (elements.healthDot && elements.healthText) {
+        elements.healthDot.className = 'health-dot ' + (isOnline ? 'online' : (isOnline === null ? 'checking' : 'offline'));
+        elements.healthDot.style.background = isOnline ? '#34D399' : (isOnline === null ? '#F59E0B' : '#EF4444');
+        elements.healthText.textContent = isOnline ? 'Server Online' : (isOnline === null ? 'Checking...' : 'Server Offline');
+    }
+    if (elements.runSyncBtn) elements.runSyncBtn.disabled = !systemReady || isRunning || !serverOnline;
+}
+
+// Command preview
+function updateCommandPreview() {
+    if (!elements.commandPreviewText) return;
+    
+    const homePath = getUserHomePath();
+    const sourcePath = `${homePath}/Documents`;
+    const remoteName = "gdrive-rclone";
+    const remotePath = `${remoteName}:Documents`;
+
+    const bisync = elements.bisyncToggle?.classList.contains('active');
+    const dryRun = elements.dryRunToggle?.classList.contains('active');
+    const verbose = elements.verboseToggle?.classList.contains('active');
+    const safety = elements.safetyToggle?.classList.contains('active');
+    const maxDelete = elements.maxDeleteInput?.value || '10';
+
+    let commandBase = bisync ? 'bisync' : 'sync';
+    let command = `rclone ${commandBase} "${sourcePath}" "${remotePath}"`;
+    let flags = [];
+
+    if (dryRun) flags.push('--dry-run');
+    if (safety) flags.push(`--max-delete=${maxDelete}`);
+    if (verbose) flags.push('--log-level=DEBUG');
+    else flags.push('--log-level=INFO');
+    
+    flags.push('--progress');
+    flags.push('--exclude=.DS_Store');
+
+    elements.commandPreviewText.textContent = command + ' ' + flags.join(' ');
+}
+
+// Progress UI functions
+function showProgressUI(title = "Syncing Documents...", showPercentage = true) {
+    if (!elements.progressSection) return;
+    elements.progressSection.classList.add('active');
+    if (elements.progressTitleText) elements.progressTitleText.textContent = title;
+    if (elements.progressPercentage) elements.progressPercentage.style.display = showPercentage ? 'block' : 'none';
+    updateProgressUI(0, "Preparing sync operation...");
+    elements.progressSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function hideProgressUI() {
+    if (elements.progressSection) elements.progressSection.classList.remove('active');
+    if (progressInterval) { 
+        clearInterval(progressInterval); 
+        progressInterval = null; 
+    }
+}
+
+function updateProgressUI(percentage, text) {
+    if (elements.progressBar) elements.progressBar.style.width = percentage + '%';
+    if (elements.progressPercentage) elements.progressPercentage.textContent = Math.round(percentage) + '%';
+    if (elements.progressText) elements.progressText.textContent = text;
+}
+
+function simulateProgress(durationSeconds = 10) {
+    if (!isRunning) return;
+    let progress = 0;
+    const updateIntervalMs = 200;
+    const totalUpdates = (durationSeconds * 1000) / updateIntervalMs;
+    const increment = 100 / totalUpdates;
+    
+    if (progressInterval) clearInterval(progressInterval);
+    
+    progressInterval = setInterval(() => {
+        if (!isRunning) { 
+            clearInterval(progressInterval); 
+            progressInterval = null; 
+            return; 
+        }
+        
+        progress += increment;
+        if (progress >= 99) {
+            clearInterval(progressInterval); 
+            progressInterval = null;
+            updateProgressUI(99, "Nearing completion...");
+        } else {
+            let statusText = "Transferring files...";
+            if (progress < 20) statusText = "Scanning files...";
+            else if (progress < 50) statusText = "Comparing changes...";
+            else if (progress > 90) statusText = "Verifying sync...";
+            updateProgressUI(progress, statusText);
+        }
+    }, updateIntervalMs);
+}
+        async function performSyncAttempt(fullCommand, syncType, currentAttemptNo, totalMaxRetries) {
+            addLog(`🚀 Attempt ${currentAttemptNo}/${totalMaxRetries} for ${syncType}...`, 'info');
+            
+            const response = await fetch(`http://localhost:${serverPort}/execute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    command: fullCommand, 
+                    cwd: getUserHomePath() 
+                }),
+                signal: AbortSignal.timeout(180000)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            
+            if (!result.success) {
+                throw new Error(result.output || 'Unknown server error');
+            }
+
+            parseAndLogRcloneOutput(result.output);
+            return result;
+        }
+        async function startSync() {
+            console.log("DEBUG: startSync called. isRunning:", isRunning, "serverOnline:", serverOnline);
+            if (isRunning) {
+                addLog("Sync operation already in progress.", 'warning');
+                showNotification("Sync already running!", "warning");
+                return;
+            }
+            if (!serverOnline) {
+                addLog("❌ Backend server is offline. Cannot start sync.", 'error');
+                showNotification("Backend server offline. Test connection first.", "error");
+                if (elements.testBtn && typeof elements.testBtn.click === 'function') elements.testBtn.click();
+                return;
+            }
+
+            isRunning = true; // Set isRunning true at the very start
+            retryAttempt = 0;
+            if (elements.actionsContainer) elements.actionsContainer.classList.add('running');
+            if (elements.runSyncBtn) elements.runSyncBtn.disabled = true;
+            
+            updateCommandPreview();
+            const fullCommand = elements.commandPreviewText.textContent;
+            const autoRetryActive = elements.autoRetryToggle?.classList.contains('active');
+            const currentMaxRetries = parseInt(elements.maxRetriesInput?.value) || maxRetriesGlobal;
+            
+            const dryRun = elements.dryRunToggle?.classList.contains('active');
+            const syncType = elements.bisyncToggle?.classList.contains('active') ? 'Bidirectional Sync' : 'One-way Sync';
+            const progressTitle = dryRun ? `${syncType} (Dry Run)` : syncType;
+
+            showProgressUI(progressTitle);
+            if (!dryRun) simulateRcloneProgress(45);
+
+            addLog(`🚀 Starting ${progressTitle}... Command: ${fullCommand}`, 'info');
+            
+            let operationSuccessful = false;
+            try { // Main try for the whole operation
+                for (retryAttempt = 1; retryAttempt <= (autoRetryActive ? currentMaxRetries : 1); retryAttempt++) { // Start attempts from 1
+                    if (!isRunning) { addLog("🛑 Sync operation was stopped.", 'warning'); break; }
+                    if (retryAttempt > 1) { // Delay only for actual retries
+                        const baseDelay = 2000; const maxDelay = 30000;
+                        const delay = Math.min(baseDelay * Math.pow(2, retryAttempt - 2), maxDelay); // Adjust exponent for retryAttempt starting at 1
+                        addLog(`⏳ Waiting ${delay / 1000}s before retry ${retryAttempt -1}/${currentMaxRetries -1}...`, 'warning'); // Display retry count correctly
+                        if (elements.retrySection) {
+                           elements.retrySection.style.display = 'block';
+                           elements.retryText.textContent = `Auto-retrying ${syncType.toLowerCase()} (attempt ${retryAttempt -1}/${currentMaxRetries -1})...`;
+                           elements.retryCounter.textContent = `${retryAttempt -1}/${currentMaxRetries -1}`;
+                           elements.retrySection.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+                        }
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        if (elements.retrySection) elements.retrySection.style.display = 'none';
+                        if (!isRunning) { addLog("🛑 Sync stopped during retry wait.", 'warning'); break; }
+                    }
+
+                    try {
+                        await performSyncAttempt(fullCommand, syncType, retryAttempt, autoRetryActive ? currentMaxRetries : 1);
+                        operationSuccessful = true;
+                        break; 
+                    } catch (error) {
+                        addLog(`❌ Attempt ${retryAttempt} of ${syncType} failed: ${error.message}`, 'error');
+                        if (error.isUserStop) { isRunning = false; break; } // User stopped during fetch
+                        if (error.isRateLimit && autoRetryActive && retryAttempt < currentMaxRetries) {
+                            showRateLimitNotice(true, "Rate limit detected. Retrying...", Math.pow(2, retryAttempt -1) * 2);
+                        } else if (!autoRetryActive || retryAttempt >= currentMaxRetries || !isRunning) {
+                            throw error; 
+                        }
+                    }
+                }
+
+                if (!operationSuccessful && isRunning) {
+                    throw new Error(`${syncType} failed after all ${autoRetryActive ? currentMaxRetries : 1} attempts.`);
+                }
+                if (isRunning && operationSuccessful) {
+                    if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
+                    updateProgressUI(100, `${progressTitle} completed successfully!`);
+                    showNotification(`${progressTitle} completed successfully!`, 'success');
+                    addLog(`✅ ${progressTitle} finished successfully.`, 'success');
+                }
+
+            } catch (error) {
+                if (isRunning) { 
+                    if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
+                    updateProgressUI(0, `${progressTitle} failed. Check logs.`);
+                    addLog(`❌ ${progressTitle} ultimately failed: ${error.message}`, 'error');
+                    showNotification(`${progressTitle} operation failed. Details in log.`, 'error', 6000);
+                } else if (error.message && !error.isUserStop) { 
+                    addLog(`ℹ️ ${progressTitle} was stopped. Last error: ${error.message}`, 'info');
+                } else {
+                    addLog(`ℹ️ ${progressTitle} was stopped by user.`, 'info');
+                }
+            } finally {
+                console.log("[DEBUG] FINALLY: Entered startSync. isRunning (start of finally):", isRunning, "systemReady:", systemReady, "serverOnline:", serverOnline);
+                addLog("🔄 Sync operation finalizing. Entering finally block.", "info");
+                
+                const wasStillRunning = isRunning; // Capture if operation was still considered running when finally started
+                isRunning = false; 
+                
+                if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
+
+                if (elements.actionsContainer) {
+                    elements.actionsContainer.classList.remove('running');
+                    console.log("[DEBUG] FINALLY: 'running' class removed. actionsContainer classes:", elements.actionsContainer.className);
+                    addLog("✓ UI: 'running' class removed, action buttons should be interactive.", "info");
+                } else {
+                    console.error("[DEBUG] FINALLY: elements.actionsContainer is NULL!");
+                    addLog("❌ CRITICAL: actionsContainer element not found in finally block!", "error");
+                }
+                
+                const canEnableRunSync = systemReady && serverOnline;
+                if (elements.runSyncBtn) {
+                    elements.runSyncBtn.disabled = !canEnableRunSync;
+                    console.log("[DEBUG] FINALLY: RunSync button disabled state:", elements.runSyncBtn.disabled, "(systemReady:", systemReady, ", serverOnline:", serverOnline,")");
+                    addLog(`✓ UI: RunSync button 'disabled' state set to ${elements.runSyncBtn.disabled}.`, "info");
+                } else {
+                    console.error("[DEBUG] FINALLY: elements.runSyncBtn is NULL!");
+                    addLog("❌ CRITICAL: runSyncBtn element not found in finally block!", "error");
+                }
+                
+                if (elements.retrySection) elements.retrySection.style.display = 'none';
+                showRateLimitNotice(false); 
+                
+                setTimeout(() => { if (!isRunning) hideProgressUI(); }, operationSuccessful && wasStillRunning ? 5000 : 1000);
+                console.log("[DEBUG] FINALLY: Exiting startSync. isRunning (end of finally):", isRunning);
+                addLog("🏁 Sync operation finalization complete.", "info");
+            }
+        }
+
+// Test connection function
+async function testConnection() {
+    addLog("🔍 Connection test initiated...", 'info');
+    showNotification("Testing connection to backend...", "info", 2000);
+    updateServerHealthUI(null);
+
+    try {
+        const response = await fetch(`http://localhost:${serverPort}/execute`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                command: 'echo "Hello from CloudSync"',
+                cwd: '/tmp'
+            }),
+            signal: AbortSignal.timeout(5000)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            addLog(`✅ Connection test successful`, 'success');
+            showNotification("Backend connection successful!", "success");
+            updateServerHealthUI(true);
+            updateSystemStatusUI(true);
+        } else {
+            addLog(`❌ Connection test failed: HTTP ${response.status}`, 'error');
+            showNotification(`Backend connection failed (HTTP ${response.status})`, "error");
+            updateServerHealthUI(false);
+            updateSystemStatusUI(false, "Backend server connection failed.");
+        }
+    } catch (error) {
+        addLog(`❌ Connection test error: ${error.message}`, 'error');
+        showNotification("Backend connection error. Using simulation mode.", "warning");
+        updateServerHealthUI(false);
+        updateSystemStatusUI(true, "Running in simulation mode");
+        
+        // In simulation mode, we can still "sync"
+        if (elements.runSyncBtn) elements.runSyncBtn.disabled = false;
+    }
+}
+
+// Emergency stop
+function emergencyStop() {
+    if (!isRunning) return;
+    
+    addLog("🛑 Emergency stop triggered by user.", 'warning');
+    isRunning = false;
+    
+    if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+    }
+    
+    if (elements.actionsContainer) {
+        elements.actionsContainer.classList.remove('running');
+    }
+    
+    if (elements.runSyncBtn) {
+        elements.runSyncBtn.disabled = !systemReady || !serverOnline;
+    }
+    
+    hideProgressUI();
+    showNotification("Sync operation stopped!", "warning");
+}
+
+// Toggle functionality
+function setupToggles() {
+    document.querySelectorAll('.toggle').forEach(toggle => {
+        toggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            this.classList.toggle('active');
+            updateCommandPreview();
+        });
+    });
+
+    document.querySelectorAll('.option-item').forEach(item => {
+        const toggle = item.querySelector('.toggle');
+        const input = item.querySelector('.number-input, .select-input');
+        
+        if (toggle && !input) {
+            item.addEventListener('click', function(e) {
+                if (e.target === toggle || toggle.contains(e.target)) return;
+                toggle.classList.toggle('active');
+                updateCommandPreview();
+            });
+        }
+    });
+
+    // Input field listeners
+    [elements.maxDeleteInput, elements.maxRetriesInput, elements.bandwidthInput, elements.bandwidthUnit].forEach(el => {
+        if (el) {
+            const eventType = el.tagName === 'SELECT' ? 'change' : 'input';
+            el.addEventListener(eventType, updateCommandPreview);
+        }
+    });
+}
+
+// Advanced options toggle
+function toggleAdvancedOptions() {
+    const panel = elements.advancedOptionsPanel;
+    const header = elements.advancedHeader;
+    
+    if (panel && header) {
+        const isOpen = panel.classList.toggle('open');
+        header.classList.toggle('open', isOpen);
+        panel.style.maxHeight = isOpen ? panel.scrollHeight + "px" : "0";
+    }
+}
+
+// Event listeners setup
+function setupEventListeners() {
+    // Advanced options toggle
+    if (elements.advancedHeader) {
+        elements.advancedHeader.addEventListener('click', toggleAdvancedOptions);
+    }
+
+    // Command preview toggle
+    if (elements.previewBtn) {
+        elements.previewBtn.addEventListener('click', () => {
+            if (elements.commandPreviewCard) {
+                const isHidden = elements.commandPreviewCard.style.display === 'none' || !elements.commandPreviewCard.style.display;
+                elements.commandPreviewCard.style.display = isHidden ? 'block' : 'none';
+                if (isHidden) {
+                    elements.commandPreviewCard.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+                }
+            }
+        });
+    }
+
+    // Modal controls
+    if (elements.wizardCancelBtn && elements.configWizardModal) {
+        elements.wizardCancelBtn.addEventListener('click', () => {
+            elements.configWizardModal.style.display = 'none';
+        });
+    }
+
+    if (elements.wizardLaunchBtn && elements.configWizardModal) {
+        elements.wizardLaunchBtn.addEventListener('click', () => {
+            elements.configWizardModal.style.display = 'none';
+            addLog("🚀 Config wizard launch requested.", 'info');
+        });
+    }
+
+    // Notification controls
+    if (elements.notificationClose && elements.notification) {
+        elements.notificationClose.addEventListener('click', () => {
+            elements.notification.style.display = 'none';
+        });
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            if (elements.notification?.style.display !== 'none') {
+                elements.notification.style.display = 'none';
+            } else if (elements.configWizardModal?.style.display !== 'none') {
+                elements.configWizardModal.style.display = 'none';
+            } else if (elements.commandPreviewCard?.style.display !== 'none') {
+                elements.commandPreviewCard.style.display = 'none';
+            }
+        }
+        
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+            if (isRunning) {
+                e.preventDefault();
+                emergencyStop();
+            }
+        }
+    });
+
+    // Main action buttons
+    if (elements.runSyncBtn) {
+        elements.runSyncBtn.addEventListener('click', startSync);
+    }
+
+    if (elements.testBtn) {
+        elements.testBtn.addEventListener('click', testConnection);
+    }
+
+    if (elements.resetBtn) {
+        elements.resetBtn.addEventListener('click', () => {
+            addLog("🔄 Cache reset & resync requested.", 'info');
+            showNotification("Reset functionality would clear rclone cache", "info");
+        });
+    }
+
+    if (elements.emergencyStop) {
+        elements.emergencyStop.addEventListener('click', emergencyStop);
+    }
+}
+
+// Main initialization
+function init() {
+    console.log('🚀 CloudSync Control Initializing...');
+    
+    // Initialize DOM elements first
+    initDOMelements();
+    
+    // Clear log and add initial message
+    if (elements.logOutput) {
+        elements.logOutput.innerHTML = '';
+    }
+    addLog("CloudSync Control initializing...", 'info');
+
+    // Set up paths and UI
+    updateStatusPaths();
+    setupToggles();
+    setupEventListeners();
+    updateCommandPreview();
+
+    // Initialize UI state
+    updateSystemStatusUI(true);
+    updateServerHealthUI(null);
+
+    // Hide initial states
+    if (elements.setupCard) elements.setupCard.classList.remove('show');
+    if (elements.syncOptionsCard) elements.syncOptionsCard.style.display = 'block';
+    if (elements.progressSection) elements.progressSection.classList.remove('active');
+    if (elements.commandPreviewCard) elements.commandPreviewCard.style.display = 'none';
+    if (elements.configWizardModal) elements.configWizardModal.style.display = 'none';
+
+    // Initially disable run button until server status is confirmed
+    if (elements.runSyncBtn) elements.runSyncBtn.disabled = true;
+
+    addLog("✅ System UI initialized. Testing backend connection...", 'success');
+    showNotification("CloudSync Initialized. Testing backend...", "info", 2000);
+
+    // Auto-test connection after short delay
+    setTimeout(() => {
+        if (elements.testBtn) {
+            elements.testBtn.click();
+        }
+    }, 500);
+
+    console.log('✅ CloudSync Control Ready');
+}
+
+// Start the application when DOM is loaded
+document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

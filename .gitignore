@@ -1,0 +1,27 @@
+Replace its entire content with the updated version below:
+
+# macOS
+.DS_Store
+
+# Node / NPM
+/node_modules
+/dist
+npm-debug.log*
+*.log
+
+# Python / PyInstaller
+/venv
+/build
+/py-dist
+*.spec
+__pycache__/
+*.pyc
+
+# Build Logs
+build_log.txt
+electron-logs.txt
+
+# Application and Binaries
+/CloudSync.app
+/rclone
+/rclone-binaries

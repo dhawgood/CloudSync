@@ -1,0 +1,19 @@
+{
+  "title": "CloudSync Installer",
+  "background": "assets/dmg-background.png",
+  "contents": [
+    {
+      "x": 270,
+      "y": 150,
+      "type": "file",
+      "path": "CloudSync.app"
+    },
+    {
+      "x": 500,
+      "y": 150,
+      "type": "link",
+      "path": "/Applications"
+    }
+  ],
+  "format": "UDZO"
+}
