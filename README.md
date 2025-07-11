@@ -14,6 +14,22 @@ CloudSync provides a user-friendly interface to control complex `rclone` operati
 * **Advanced Controls:** Configure options like auto-retries, bandwidth limits, and verbose logging directly from the UI.
 * **Live Progress:** View real-time progress bars and a detailed log output for active sync operations.
 
+- - - 
+
+### ⚠️ macOS Warning: “App is Damaged”
+
+If macOS blocks the app with a message like:
+
+> “CloudSync.app is damaged and can’t be opened”
+
+Don’t worry — this is a false alarm caused by macOS Gatekeeper, because the app is **unsigned**.
+
+#### ✅ To fix it:
+Open **Terminal** and run:
+xattr -d com.apple.quarantine /Applications/CloudSync.app
+
+- - -
+
 ## Keyboard Shortcuts
 
 You can use standard keyboard shortcuts to adjust the application's zoom level for your comfort.
